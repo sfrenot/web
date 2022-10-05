@@ -28,6 +28,7 @@ Le plus compact et simple à gérer dans une première étape et de rapatrier su
 
 Voici deux exemples classiques : 
  `Mac / 64bits : wget https://downloads.mongodb.com/osx/mongodb-macos-x86_64-enterprise-4.2.23.tgz`   
+
  `Debian9 / 64 : wget https://downloads.mongodb.com/linux/mongodb-linux-x86_64-enterprise-debian92-4.2.23.tgz`   
 
 Une fois votre tgz récupéré, vous pouvez installer les sources dans un sous repertoire de votre projet. 
@@ -55,6 +56,19 @@ Le lancement doit rester en attente sur un message du style :
 ```
 {"t":{"$date":"2022-10-05T11:25:15.020+02:00"},"s":"I",  "c":"NETWORK",  "id":23016,   "ctx":"listener","msg":"Waiting for connections","attr":{"port":3010,"ssl":"off"}}
 ```
+
+Pour arrêter le serveur de base de données, il suffit d'arrêter le processus de la console par un CTRL-C. Pour supprimer la base de données et repartir d'une base vide, il suffit d'arrêter le processus, et supprimer le contenu du répertoire data.
+
+Pour tester le moteur de base de données, il faut lancer le CLI mongo. Il permet de réaliser des commandes sur mongo à partir d'un shell interactif. Dans une nouvelle fenêtre, lancez les commandes suivantes pour créer une collection `toto` avec des données minimales. Attention ne confondez pas `mongod` le processus serveur de `mongo` le CLI. 
+
+```shell
+$ ./mongodb-macos-x86_64-enterprise-4.4.17/bin/mongo -port 3010
+> db.toto.find() // Ne renvoie rien, la collection n\'existe pas
+> db.toto.insert({"nom": "Stephane"}) // Insert un document dans la collection toto
+> db.toto.find() // Renvoie le document inséré
+> db.toto.drop() // Supprime la collection toto
+```
+Vous n'avez plus besoin du CLI si vous avez vérifié que votre base fonctionne. Vous pouvez en apprendre plus sur mongodb en lisant la documentation. Mais c'est inutile dans le cadre de ce projet.
 
 
 
