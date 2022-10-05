@@ -1,4 +1,4 @@
-Ce tutorial est très largement inspiré de ce [billet de blog](https://medium.com/@bryantheastronaut/react-getting-started-the-mern-stack-tutorial-feat-es6-de1a2886be50).
+Ce tutorial est très largement inspiré de ce [billet de blog](https://medium.com/@bryantheastronaut/ok-here-we-go-b9f683c5a00c).
 
 Il explique l'installation et les grandes lignes de fonctionnement d'une application react/node/express/mongodb ou mern. Elle suppose que les principes de framework web, de base de données et de programmation javascript sont compris. L'objectif de ce tutorial est de mettre en route rapidement une application de chat sauvegardée sous mongodb. 
 
@@ -11,7 +11,52 @@ Une application mern est donc constituées de trois parties :
 
 # Zero feature application
 Dans un système nécessitant la coopération de plusieurs processus. La première étape est de faire fonctionner ces processus "à vide". C'est à dire vérifier qu'on sait lancer, arrêter et surveiller le fonctionnement des processus. 
-Il existe plusieurs approches pour faire fonctionner des processus. Lorsque vous avez la main directe sur l'environnement d'exploitation et sur les code des applications, je suggère d'installer les binaires ou les sources sans utiliser de gestionnaires d'installation extérieurs. Pour faire fonctionner nos trois processus (react, express, bd), il est nécessaire d'installer deux logiciels. Le gestionnaire de base de données mongodb, le runtime javascript node.  
+Il existe plusieurs approches pour faire fonctionner des processus. Lorsque vous avez la main directe sur l'environnement d'exploitation et sur les code des applications, je suggère d'installer les binaires ou les sources sans utiliser de gestionnaires d'installation extérieurs. Pour faire fonctionner nos trois processus (react, express, bd), il est nécessaire d'installer deux logiciels. Le gestionnaire de base de données mongodb, le runtime javascript node.
+## Démarrer votre projet
+Choisissez un repertoire dans lequel vous installerez l'intégralité de votre système. Supprimer ce répertoire vous permettra de redémarrer sur une installation propre. Pour ce genre d'application j'utilise un repertoire simple pour faire un `cd` dedans et sans trop de contraintes de sécurité. Par exemple `/opt`est souvent vide et disponible. 
+
+```shell
+cd /opt
+mkdir -p mern/database
+mkdir -p mern/front
+mkdir -p mern/backend
+cd mern
+```
+
+## La base de données
+Le plus compact et simple à gérer dans une première étape et de rapatrier sur sa machine l'exécutable de mongodb. Le site de mongodb est [ici](https://www.mongodb.com/try/download/enterprise). Le site demande une identification spécifique, mais si vous connaissez l'url de chargement vous pouvez directement récupérer une version avec wget. 
+
+Voici deux exemples classiques : 
+ `Mac / 64bits : wget https://downloads.mongodb.com/osx/mongodb-macos-x86_64-enterprise-4.2.23.tgz`   
+ `Debian9 / 64 : wget https://downloads.mongodb.com/linux/mongodb-linux-x86_64-enterprise-debian92-4.2.23.tgz`   
+
+Une fois votre tgz récupéré, vous pouvez installer les sources dans un sous repertoire de votre projet. 
+```shell
+cd database
+tar zxvf ~/Download/mongodb-macos-x86_64-enterprise-4.2.23.tgz
+```
+L'archive crée un repertoire `mongodb-macos-x86_64-enterprise-4.2.23` contenant le système de gestion de données mongo. Vous pouvez lancer le serveur sur un port spécifique. (Avec une erreur).
+```shell
+./mongodb-macos-x86_64-enterprise-4.2.23/bin/mongod --port 3010
+```
+Le lancement se fait sur port 3010, mais le process se termine rapidement. Avec des lignes d'arrêt ressemblant à :
+```
+{"t":{"$date":"2022-10-05T10:57:20.474+02:00"},"s":"I",  "c":"FTDC",     "id":4784926, "ctx":"initandlisten","msg":"Shutting down full-time data capture"}
+{"t":{"$date":"2022-10-05T10:57:20.474+02:00"},"s":"I",  "c":"CONTROL",  "id":20565,   "ctx":"initandlisten","msg":"Now exiting"}
+{"t":{"$date":"2022-10-05T10:57:20.474+02:00"},"s":"I",  "c":"CONTROL",  "id":23138,   "ctx":"initandlisten","msg":"Shutting down","attr":{"exitCode":100}}
+```
+
+Au milieu des messages de log, un message indique qu'il manque l'emplacement pour stocker les fichiers de base de données. L'option --dbpath doit être ajouté au démarrage.
+```
+mkdir data
+./mongodb-macos-x86_64-enterprise-4.2.23/bin/mongod --port 3010 --dbpath ./data
+```
+Le lancement doit rester en attente sur un message du style :
+```
+{"t":{"$date":"2022-10-05T11:25:15.020+02:00"},"s":"I",  "c":"NETWORK",  "id":23016,   "ctx":"listener","msg":"Waiting for connections","attr":{"port":3010,"ssl":"off"}}
+```
+
+
 
 
 
