@@ -93,7 +93,7 @@ A partir de maintenant on peut lancer l'interpréteur node avec la commande `./n
 Vous avez maintenant à disposition un interpréteur node et une base de données mongo. Vous allez pouvoir installer les deux processus node nécessaires pour le front (react) et le back express. 
 Pour gagner du temps et de la clareté dans les commandes, j'utiliserais directement `node` en supposant que vous l'avez ajouté à votre PATH, ou que vous le lancez avec un chemin complet ou relatif. `/opt/mern/node-v16.17.1-darwin-x64/bin/node`ou `../../nodenode-v16.17.1-darwin-x64/bin/node`.
 
-## Installation du front
+## Installation et démarrage du front
 Dans le repertoire racine mern, lancez la commande `npx create-react-app client`.
 ```shell
 cd /opt/mern
@@ -107,7 +107,371 @@ npm start
 
 Remarque : vous venez d'utiliser deux outils node. `npm` est un gestionnaire de package de node qui permet d'installer et gérer des modules. `npx` permet d'exécuter un module comme un programme sans avoir à faire une installation publique commune.
 
+# Installation du backend
 Avant de démarrer le code de test de l'application il reste encore à lancer le serveur express dans le backend. 
+Copiez le fichier de lancement du serveur dans le répertoire backend.
+
+```
+cd /opt/mern/backend
+```
+
+```javascript
+// server.js
+
+// first we import our dependencies…
+const express = require("express");
+const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
+
+// and create our instances
+const app = express();
+const router = express.Router();
+
+// set our port to either a predetermined port number if you have set it up, or 3001
+const API_PORT = process.env.API_PORT || 3001;
+// now we should configure the API to use bodyParser and look for JSON data in the request body
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+// now we can set the route path & initialize the API
+router.get('/', (req, res) => {
+  res.json({ message: 'Hello, World!' });
+});
+
+// Use our router configuration when we call /api
+app.use('/api', router);
+
+app.listen(API_PORT, () => console.log(`Listening on port ${API_PORT}`));
+```
+
+Le serveur peut être lancé, avec la commande `node ./server.js`. Nous allons utiliser l'outil `nodemon` qui permet de relancer le serveur si un fichier de dépendance est modifié. 
+```
+$ npx nodemon ./server.js
+```
+Au premier lancement, il vous proposera d'installer le module nodemon.
+Pour tester votre serveur, vous devez consulter l'url [suivante](http://localhost:3001/api). Celle-ci doit vous répondre un document json aillant la structure suivante :
+```json
+{
+"message": "Hello, World!"
+}
+```
+
+Votre Zero Feature Release est enfin prête. Elle est composée de trois processus actifs. Au plus simple ils sont lancés dans trois fenêtres de console différentes dans lesquelles les traces d'exécutions sont affichées. 
+- La base de données : <database> ./bin/mongodb --dbpath=./data --port 3010
+- Le front react : <client> npm start
+- Le back express : <backend> npx nodemon ./server.js
+
+Ces trois processus se lancent et s'arrêtent pas CTRL-C dans leur consoles respectives, et se testent soit par le CLI mongo pour la base de données, soit par un navigateur pointant sur [](http://localhost:3000) pour le front, soit sur [](http://localhost:3000/api/) pour le back.
+
+Le deux démons front et back sont automatiquement relancés si les ficiers sont mis à jour. 
+
+# L'application de gestion des chats
+Elle permet de chater entre utilisateurs sur un même frontal. 
+Les messages sont stockés dans une collection mongo, et accessibles par une API mongoose. 
+L'application sera dévéloppée en démarrant du front, puis en ajoutant une route serveur, puis en modifiant le client pour qu'il cherche les donnée sur le serveur. 
+
+## Le client
+Pour démarrer le client nous allons réduire l'application initiale et remplacer quelques fichiers. Arrêtez l'application réact dans sa console puis supprimez les fichiers logo.svg, App.css, App.test.js, App.js. 
+```bash
+cd /opt/mern/client
+rm src/logo.svg src/App.css src/App.test.js src/App.js
+```
+Dans le fichier index.js de lancement, remplacez App par CommentBox, à l\'import et à l\'instanciation. 
+
+```js
+//index.js
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import CommentBox from './CommentBox';
+import reportWebVitals from './reportWebVitals';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <CommentBox />
+  </React.StrictMode>
+);
+
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+reportWebVitals();
+```
+
+Le fichier index.js charge le composant ComponentBox. La version initiale simple est la suivante :
+Le commposant charge la liste des commentaires (CommentList),
+propose une interface de saisie d'un commentaire (CommentForm),
+affiche des données issues d'un fichier de données,
+et utilise un style d'affichage CommentBox.css.
+
+Créez les fichiers correspondant dans le répertoire src du client.
+
+```js
+// CommentBox.js
+import React, { Component } from 'react';
+import CommentList from './CommentList';
+import CommentForm from './CommentForm';
+import DATA from './data';
+import './CommentBox.css';
+
+class CommentBox extends Component {
+  constructor() {
+    super();
+    this.state = { data: [] };
+  }
+  render() {
+    return (
+      <div className="container">
+        <div className="comments">
+          <h2>Comments:</h2>
+          <CommentList data={DATA} />
+        </div>
+        <div className="form">
+          <CommentForm />
+        </div>
+      </div>
+    );
+  }
+}
+
+export default CommentBox;
+```
+
+```js
+// CommentList.js
+import React from 'react';
+import PropTypes from 'prop-types';
+import Comment from './Comment';
+
+const CommentList = (props) => {
+  const commentNodes = props.data.map(comment => (
+    <Comment author={comment.author} key={comment._id} id={comment._id}>
+      { comment.text}
+    </Comment>
+  ));
+  return (
+    <div>
+      { commentNodes }
+    </div>
+  );
+};
+
+CommentList.propTypes = {
+  data: PropTypes.arrayOf(PropTypes.shape({
+    author: PropTypes.string,
+    id: PropTypes.string,
+    text: PropTypes.string,
+  })),
+};
+
+CommentList.defaultProps = {
+  data: [],
+};
+
+export default CommentList;
+```
+
+```js
+// CommentForm.js
+import React from 'react';
+import PropTypes from 'prop-types';
+
+const CommentForm = props => (
+  <form onSubmit={props.submitComment}>
+    <input
+      type="text"
+      name="author"
+      placeholder="Your name…"
+      value={props.author}
+      onChange={props.handleChangeText}
+    />
+    <input
+      type="text"
+      name="text"
+      placeholder="Say something..."
+      value={props.text}
+      onChange={props.handleTextChange}
+    />
+    <button type="submit">Submit</button>
+  </form>
+);
+
+CommentForm.propTypes = {
+  submitComment: PropTypes.func.isRequired,
+  handleChangeText: PropTypes.func.isRequired,
+  text: PropTypes.string,
+  author: PropTypes.string,
+};
+
+CommentForm.defaultProps = {
+  text: '',
+  author: '',
+};
+
+export default CommentForm;
+```
+
+```js
+// Comment.js
+import React from 'react';
+import PropTypes from 'prop-types';
+import ReactMarkdown from 'react-markdown';
+
+const Comment = props => (
+  <div className="singleComment">
+    <img alt="user_image" className="userImage" src={`https://picsum.photos/70?random=${props.id}`} />
+    <div className="textContent">
+      <div className="singleCommentContent">
+        <h3>{props.author}</h3>
+        <ReactMarkdown source={props.children} />
+      </div>
+      <div className="singleCommentButtons">
+      </div>
+    </div>
+  </div>
+);
+
+Comment.propTypes = {
+  author: PropTypes.string.isRequired,
+  children: PropTypes.string.isRequired,
+  timestamp: PropTypes.string.isRequired,
+};
+
+export default Comment;
+```
+
+```js
+// data.js
+const data = [
+  { _id: 1, author: 'Bryan', text: 'Wow this is neat', updatedAt: new Date(), createdAt: new Date() },
+  { _id: 2, author: 'You', text: 'You\'re __right!__', updatedAt: new Date(), createdAt: new Date() },
+];
+
+export default data;
+```
+```css
+/*CommentBox.css*/
+.container {
+  background-color: #f1f1f1;
+  box-sizing: border-box;
+  padding: 25px;
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-flow: column nowrap;
+  align-items: center;
+  justify-content: space-between;
+
+}
+
+.comments {
+  overflow: auto;
+  width: 75%;
+  max-width: 700px;
+  min-width: 300px;
+}
+
+.comments h2 {
+  font-weight: 300;
+}
+
+.singleComment {
+  padding: 10px 20px;
+  margin-bottom: 10px;
+  display: flex;
+}
+
+.singleCommentContent {
+  min-width: 100px;
+  background-color: #fff;
+  border-radius: 25px;
+  padding: 10px;
+  display: inline-flex;
+}
+
+.userImage {
+  height: 35px;
+  margin-right: 10px;
+  border-radius: 50%;
+}
+
+
+.singleCommentContent h3 {
+  margin: 0;
+  padding-right: 5px;
+  font-size: 12px;
+  color: #385997;
+}
+
+.singleCommentContent p {
+  font-size: 12px;
+  margin: 0;
+}
+
+.singleCommentButtons {
+  padding-top: 5px;
+}
+
+.time {
+  font-size: 10px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #999;
+}
+
+.singleCommentButtons a {
+  margin: 0px 3px;;
+  padding-top: 10px;
+  cursor: pointer;
+  font-size: 10px;
+  color: #385997;
+  letter-spacing: 0.05em;
+}
+
+.form {
+  width: 70%;
+  min-width: 300px;
+  max-width: 700px;
+}
+
+.form form {
+  display: flex;
+  padding: 15px 0;
+}
+
+.form input {
+  height: 30px;
+  padding-left: 10px;
+  border: 1px solid #c1c1c1;
+  margin-right: 10px;
+  border-radius: 20px;
+  flex: 3;
+}
+
+.form input:first-child {
+  flex: 1;
+}
+
+.form button {
+  color: #999;
+  border-radius: 5px;
+  border: 1px solid #999;
+}
+
+.form button:hover {
+  cursor: pointer;
+  color: #385997;
+  border-color: #385997;
+}
+```
+C'est le moment de relancer votre client et de corriger les bugs. Un bug est introduit dans une resolution de package qu'il faut installer à la main. Vous devez finir par obtenir une interface graphique affichant des Commentaires et une zone de saisie. La saisie ne fonctionne pas, et les commentaires sont fixés par le fihier data. 
+
+C'est le moment de tester des choses...
+Modifiez le contenu du fichier data et vérifiez que les données sont automatiquement corrigées. Supprimer les éléments de style (css) pour voir l'impact sur votre code, etc... Prenez votre temps de voir le comportement de votre chaine réact, sans impacter votre base de données. 
+
+
+
 
 
 
