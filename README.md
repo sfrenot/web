@@ -5,7 +5,7 @@ Il explique l'installation et les grandes lignes de fonctionnement d'une applica
 Avant de démarrer ce tutorial, je vous recommande de réaliser le tutorial react qui se trouve [ici](https://reactjs.org/)
 
 Une application mern est donc constituées de trois parties :
-- Un frontal qui gère les interactions avec l'utilisateur. Ce frontal est réalisé en react, et s'installera sur le port par défaut 3000.
+- Un client frontal qui gère les interactions avec l'utilisateur. Ce frontal est réalisé en react, et s'installera sur le port par défaut 3000.
 - Un serveur d'API qui répondra aux requêtes réalisées par le client afin de rendre persistantes les données. Ce serveur est réalisé en node/express et s'installera sur le port par defaut 3001.
 - Une base de donneés qui stockera les information de l'application. Vous utilisez une base de données mongodb qui fonctionnera sur le port spécifique 3010. 
 
@@ -18,11 +18,9 @@ Choisissez un repertoire dans lequel vous installerez l'intégralité de votre s
 ```shell
 cd /opt
 mkdir -p mern/database
-mkdir -p mern/front
 mkdir -p mern/backend
 cd mern
 ```
-
 ## La base de données
 Le plus compact et simple à gérer dans une première étape et de rapatrier sur sa machine l'exécutable de mongodb. Le site de mongodb est [ici](https://www.mongodb.com/try/download/enterprise). Le site demande une identification spécifique, mais si vous connaissez l'url de chargement vous pouvez directement récupérer une version avec wget. 
 
@@ -32,10 +30,14 @@ Voici deux exemples classiques :
  `Debian9 / 64 : wget https://downloads.mongodb.com/linux/mongodb-linux-x86_64-enterprise-debian92-4.2.23.tgz`   
 
 Une fois votre tgz récupéré, vous pouvez installer les sources dans un sous repertoire de votre projet. 
+
 ```shell
 cd database
-tar zxvf ~/Download/mongodb-macos-x86_64-enterprise-4.2.23.tgz
+wget https://downloads.mongodb.com/osx/mongodb-macos-x86_64-enterprise-4.2.23.tgz
+tar zxvf ./mongodb-macos-x86_64-enterprise-4.2.23.tgz
+rm ./mongodb-macos-x86_64-enterprise-4.2.23.tgz
 ```
+
 L'archive crée un repertoire `mongodb-macos-x86_64-enterprise-4.2.23` contenant le système de gestion de données mongo. Vous pouvez lancer le serveur sur un port spécifique. (Avec une erreur).
 ```shell
 ./mongodb-macos-x86_64-enterprise-4.2.23/bin/mongod --port 3010
@@ -68,9 +70,44 @@ $ ./mongodb-macos-x86_64-enterprise-4.4.17/bin/mongo -port 3010
 > db.toto.find() // Renvoie le document inséré
 > db.toto.drop() // Supprime la collection toto
 ```
-Vous n'avez plus besoin du CLI si vous avez vérifié que votre base fonctionne. Vous pouvez en apprendre plus sur mongodb en lisant la documentation. Mais c'est inutile dans le cadre de ce projet.
+Vous n'avez plus besoin du CLI (CTRL-C) si vous avez vérifié que votre base fonctionne. Vous pouvez en apprendre plus sur mongodb en lisant la documentation. Mais c'est inutile dans la suite du projet.
 
+A partir de cette étape, vous savez :  
+- Récupérer un tarball d'installation de mongodb
+- Installer la base de données mongodb dans un répertoire isolé
+- Lancer le moteur en précisant un port de connexion pour dialoguer avec et un repertoire contenant les données créées
+- Supprimer toutes les bases pour repatir de zéro
+- Arrêter le serveur
 
+## NodeJs
+Le backend (express) et react dépendent tous les deux d'un interpréteur javascript. Nous installons et utilisons node de manière similaire à mongodb à partir d'un tarball. 
+```shell
+cd /opt/mern
+wget https://nodejs.org/dist/v16.17.1/node-v16.17.1-darwin-x64.tar.gz
+tar xxvf ./node-v16.17.1-darwin-x64.tar.gz
+rm ./node-v16.17.1-darwin-x64.tar.gz
+```
+A partir de maintenant on peut lancer l'interpréteur node avec la commande `./node-v16.17.1-darwin-x64/bin/node'. Faire un CTRL-C pour sortir de l'interpréteur.
+
+## Les outils de base sont prêt
+Vous avez maintenant à disposition un interpréteur node et une base de données mongo. Vous allez pouvoir installer les deux processus node nécessaires pour le front (react) et le back express. 
+Pour gagner du temps et de la clareté dans les commandes, j'utiliserais directement `node` en supposant que vous l'avez ajouté à votre PATH, ou que vous le lancez avec un chemin complet ou relatif. `/opt/mern/node-v16.17.1-darwin-x64/bin/node`ou `../../nodenode-v16.17.1-darwin-x64/bin/node`.
+
+## Installation du front
+Dans le repertoire racine mern, lancez la commande `npx create-react-app client`.
+```shell
+cd /opt/mern
+npx create-react-app client
+```
+Cette action crée une application react vide dans un repertoire client. Puis vous propose de lancer l'application avec la commande `npm start` dans ce repertoire. Ce lancement va démarrer une application vide react, et vous proposer de lire le tutoriel.
+```shell
+cd /opt/mern/client
+npm start
+```
+
+Remarque : vous venez d'utiliser deux outils node. `npm` est un gestionnaire de package de node qui permet d'installer et gérer des modules. `npx` permet d'exécuter un module comme un programme sans avoir à faire une installation publique commune.
+
+Avant de démarrer le code de test de l'application il reste encore à lancer le serveur express dans le backend. 
 
 
 
