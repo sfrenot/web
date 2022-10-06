@@ -171,10 +171,10 @@ Les messages sont stockés dans une collection mongo, et accessibles par une API
 L'application sera dévéloppée en démarrant du front, puis en ajoutant une route serveur, puis en modifiant le client pour qu'il cherche les donnée sur le serveur. 
 
 ## Le client
-Pour démarrer le client nous allons réduire l'application initiale et remplacer quelques fichiers. Arrêtez l'application réact dans sa console puis supprimez les fichiers logo.svg, App.css, App.test.js, App.js. 
+Pour démarrer le client nous allons réduire l'application initiale et remplacer quelques fichiers. Arrêtez l'application réact dans sa console puis supprimez les fichiers logo.svg, App.css, App.test.js, App.js, setupTests.js
 ```bash
 cd /opt/mern/client
-rm src/logo.svg src/App.css src/App.test.js src/App.js
+rm src/logo.svg src/App.css src/App.test.js src/App.js src/setupTests.js
 ```
 Dans le fichier index.js de lancement, remplacez App par CommentBox, à l\'import et à l\'instanciation. 
 
@@ -396,7 +396,6 @@ export default data;
   border-radius: 50%;
 }
 
-
 .singleCommentContent h3 {
   margin: 0;
   padding-right: 5px;
@@ -468,7 +467,83 @@ export default data;
 C'est le moment de relancer votre client et de corriger les bugs. Un bug est introduit dans une resolution de package qu'il faut installer à la main. Vous devez finir par obtenir une interface graphique affichant des Commentaires et une zone de saisie. La saisie ne fonctionne pas, et les commentaires sont fixés par le fihier data. 
 
 C'est le moment de tester des choses...
-Modifiez le contenu du fichier data et vérifiez que les données sont automatiquement corrigées. Supprimer les éléments de style (css) pour voir l'impact sur votre code, etc... Prenez votre temps de voir le comportement de votre chaine réact, sans impacter votre base de données. 
+Modifiez le contenu du fichier data et vérifiez que les données sont automatiquement corrigées. Supprimer les éléments de style (css) pour voir l'impact sur votre code, etc... Prenez votre temps de voir le comportement de votre chaine réact, sans impacter votre base de données. Prenez le temps de comprendre les 
+différents fichiers de votre architecture initiale.
+
+# Liaison à la base de données
+Le client puise ses données dans le fichier data.js. Il est temps d'interfacer votre application `react` à votre front. 
+En premier lieu nous allons connecter le backend à la base de données, déclarer le modèle de données à manipuler, puis des routes d'accès à ce modèle de données. Tout se déroule dans le backend, et pour le démarrage je suggère d'arrêter le serveur le temps de positionner les trois éléments. Un test peut être utile entre chaque éléments. 
+
+## Réaliser la connexion 
+Pour se connecter à la base de donnée, il faut démarrer le server par une connexion à mongodb. Insérer les lignes suivantes et tester.
+
+```bash
+cd /opt/mern/backend
+```
+
+```js
+//server.js
+...
+...const API_PORT = process.env.API_PORT || 3001
+...
+...
+mongoose.connect("mongodb://localhost:3010/");
+var db = mongoose.connection;
+db.on('error', console.error.('Erreur de connexion'));
+```
+
+## Ajouter le modèle dans le serveur
+Créer le fichier de description moogose du schéma de commentaires. Déposez le modèle dans `model/comment.js`.
+
+```js
+//model/comment.js
+const mongoose require("mongoose");
+const Schema = mongoose.Schema;
+
+// create new instance of the mongoose.schema. the schema takes an
+// object that shows the shape of your database entries.
+const CommentsSchema = new Schema({
+  author: String,
+  text: String,
+}, { timestamps: true });
+
+// export our module to use in server.js
+module.exports = mongoose.model('Comment', CommentsSchema);
+```
+
+Injectez ce schema dans le serveur.
+```js
+//server.js
+...
+... const mongoose = require("mongoose");
+...
+const Comment = require("./model/comment");
+```
+
+Il ne reste plus qu'à ajouter une route pour l'accès client. 
+Ajoutez la route de consultation suivante. 
+
+```js
+//server.js
+...
+...router.get('/', (req, res) => {
+...  res.json({ message: 'Hello, World!' });
+...});
+...
+router.get('/comments', (req, res) => {
+  Comment.find((err, comments) => {
+    if (err) return res.json({ success: false, data: {"error: err });
+    return res.json({ success: true, data: comments });
+  });
+});
+```
+
+Vous pouvez maintenant lancer votre serveur. Pensez à lancer votre base de données avant. 
+
+
+
+
+
 
 
 
