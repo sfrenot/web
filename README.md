@@ -98,6 +98,7 @@ Dans le repertoire racine mern, lancez la commande `npx create-react-app client`
 ```shell
 cd /opt/mern
 npx create-react-app client
+npm install react-markdown whatwg-fetch prop-types 
 ```
 Cette action crée une application react vide dans un repertoire client. Puis vous propose de lancer l'application avec la commande `npm start` dans ce repertoire. Ce lancement va démarrer une application vide react, et vous proposer de lire le tutoriel.
 ```shell
@@ -211,7 +212,7 @@ Créez les fichiers correspondant dans le répertoire src du client.
 // CommentBox.js
 import React, { Component } from 'react';
 import CommentList from './CommentList';
-import CommentForm from './CommentForm';
+//import CommentForm from './CommentForm';
 import DATA from './data';
 import './CommentBox.css';
 
@@ -273,46 +274,6 @@ export default CommentList;
 ```
 
 ```js
-// CommentForm.js
-import React from 'react';
-import PropTypes from 'prop-types';
-
-const CommentForm = props => (
-  <form onSubmit={props.submitComment}>
-    <input
-      type="text"
-      name="author"
-      placeholder="Your name…"
-      value={props.author}
-      onChange={props.handleChangeText}
-    />
-    <input
-      type="text"
-      name="text"
-      placeholder="Say something..."
-      value={props.text}
-      onChange={props.handleTextChange}
-    />
-    <button type="submit">Submit</button>
-  </form>
-);
-
-CommentForm.propTypes = {
-  submitComment: PropTypes.func.isRequired,
-  handleChangeText: PropTypes.func.isRequired,
-  text: PropTypes.string,
-  author: PropTypes.string,
-};
-
-CommentForm.defaultProps = {
-  text: '',
-  author: '',
-};
-
-export default CommentForm;
-```
-
-```js
 // Comment.js
 import React from 'react';
 import PropTypes from 'prop-types';
@@ -324,7 +285,7 @@ const Comment = props => (
     <div className="textContent">
       <div className="singleCommentContent">
         <h3>{props.author}</h3>
-        <ReactMarkdown source={props.children} />
+        <ReactMarkdown children={props.children} />
       </div>
       <div className="singleCommentButtons">
       </div>
@@ -335,7 +296,7 @@ const Comment = props => (
 Comment.propTypes = {
   author: PropTypes.string.isRequired,
   children: PropTypes.string.isRequired,
-  timestamp: PropTypes.string.isRequired,
+  //timestamp: PropTypes.string.isRequired,
 };
 
 export default Comment;
@@ -541,8 +502,98 @@ router.get('/comments', (req, res) => {
 Vous pouvez maintenant lancer votre serveur. Pensez à lancer votre base de données avant. 
 Si vous accéder à la page http://locahost:3000/api/comments, vous devriez voir le contenu de la route de message. Il n'y a pas de message dans la base de données, mais vous pouvez en injecter un avec le CLI de mongo, afin de créer dans la base une donnée fictive. `db.comment.insert({"Author":"toto", "text": "Hello"})'.
 
-Une image de votre runtime actuel pourrait ressembler à cela. 
-![Dev](./ecranConfGeneral.png)
+Une image de votre runtime avant insertion de données pourrait ressembler à cela. ![Dev](./ecranConfGeneral.png)
+
+# Liaison Front / Backend
+Le code du composant `CommandBox` est le point de synchronisation avec la base de données. Vous allez changer sa version, pour ne plus travailler sur les données du fichier local, mais puiser les données sur le serveur par un mécanisme de pulling. Toutes les deux secondes une méthode `fetch` est déclenchée pour récupérer le données. Le code suivant remplace le code initial. Prenez le temps de regarder ce qui s'y fait. Pretez attention au mécanisme de promesse nécessaire au pulling de données. 
+
+```js
+// CommentBox.js
+import React, { Component } from 'react';
+import 'whatwg-fetch';
+import CommentList from './CommentList';
+import CommentForm from './CommentForm';
+
+class CommentBox extends Component {
+  constructor() {
+    super();
+    this.state = {
+      data: [],
+      error: null,
+      author: '',
+      text: ''
+    };
+    this.pollInterval = null;
+  }
+
+  componentDidMount() {
+    this.loadCommentsFromServer();
+    if (!this.pollInterval) {
+      this.pollInterval = setInterval(this.loadCommentsFromServer, 2000);
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.pollInterval) clearInterval(this.pollInterval);
+    this.pollInterval = null;
+  }
+
+  loadCommentsFromServer = () => {
+    // fetch returns a promise. If you are not familiar with promises, see
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
+    fetch('http://localhost:3001/api/comments/')
+      .then(data => data.json())
+      .then((res) => {
+        if (!res.success) this.setState({ error: res.error });
+        else this.setState({ data: res.data });
+      });
+  }
+
+  render() {
+    return (
+      <div className="container">
+        <div className="comments">
+          <h2>Comments:</h2>
+          <CommentList data={this.state.data} />
+        </div>
+        <div className="form">
+          <CommentForm author={this.state.author} text={this.state.text} />
+        </div>
+        {this.state.error && <p>{this.state.error}</p>}
+      </div>
+    );
+  }
+}
+
+export default CommentBox;
+```
+Lorsque vous allez charger ce code, la compilation react sera ok, mais le code ne fonctionnera pas pour une question de sécurité. vous venez de déclencher le mécanisme CORS. (ref ?). Ce mécanisme empêche un code provenant d'une machine secondaire d'être exécuté. Dans notre cas, la machine principale est `localhost:3000` qui __livre__ le code du front, une fois le code chargée, elle réalise des requêtes sur une machine secondaire à l'adresse `localhost:3001`. Ce principe est interdit pour des questions de sécurité. Il existe de nombreuses solutions en dévelopement qui dépendent de l'architecture de production que vous souhaitez mettre en place. Dans notre exemple, nous allons dire à la machine react de réaliser les requêtes au titre du client sur le serveur du backend. En résumé, les requêtes de récupération de données, passent par le serveur réact, mais sont redispatchées vers le serveur backend. 
+Pour cela, il faut corriger deux éléments :
+1. Réaliser les requêtes d'appel sur le client react
+2. Détourner ces appels ; ils possèdent un prefixe commun; vers le serveur de données. 
+
+Le premier se fait en corrigeant la ligne du ComponentBox réalisant l'appel de récupération de données. 
+
+1)
+```
+//ComponentBox.js
+...
+...loadCommentsFromServer = () => {
+......// fetch returns a promise. If you are not familiar with promises, see
+.....// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
+    //fetch('http://localhost:3001/api/comments/')
+    fetch('/api/comments/')
+...
+```
+
+2) Dans le fichier de configuration du client, /opt/mern/client/package.json, spécifier l'utilisation du proxy en dernière ligne. 
+
+```json
+,
+"proxy": "http://localhost:3001"
+```
+
+A partir de maintenant le texte affiché devrait récupérer les données de la base. Vous pouvez ajouter à la main des enregistrements en base et vérifie que le client se met bien à jour. 
 
 
 
@@ -552,6 +603,47 @@ Une image de votre runtime actuel pourrait ressembler à cela.
 
 
 
+
+
+```js
+// CommentForm.js
+import React from 'react';
+import PropTypes from 'prop-types';
+
+const CommentForm = props => (
+  <form onSubmit={props.submitComment}>
+    <input
+      type="text"
+      name="author"
+      placeholder="Your name…"
+      value={props.author}
+      onChange={props.handleChangeText}
+    />
+    <input
+      type="text"
+      name="text"
+      placeholder="Say something..."
+      value={props.text}
+      onChange={props.handleTextChange}
+    />
+    <button type="submit">Submit</button>
+  </form>
+);
+
+CommentForm.propTypes = {
+  submitComment: PropTypes.func.isRequired,
+  handleChangeText: PropTypes.func.isRequired,
+  text: PropTypes.string,
+  author: PropTypes.string,
+};
+
+CommentForm.defaultProps = {
+  text: '',
+  author: '',
+};
+
+export default CommentForm;
+```
 
 
 Ok, here we go! This is a _(much needed)_ update to me original MERN Facebook Comment box tutorial. That can be found [here](https://medium.com/@bryantheastronaut/react-getting-started-the-mern-stack-tutorial-feat-es6-de1a2886be50), but this is the new and improved version. I've 1) learned A TON since that last tutorial and, 2) the community has come to some best practices that we will implement here. The premise will be the same -- we will be building a Facebook-like comment box.
