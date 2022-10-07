@@ -539,6 +539,10 @@ router.get('/comments', (req, res) => {
 ```
 
 Vous pouvez maintenant lancer votre serveur. Pensez à lancer votre base de données avant. 
+Si vous accéder à la page http://locahost:3000/api/comments, vous devriez voir le contenu de la route de message. Il n'y a pas de message dans la base de données, mais vous pouvez en injecter un avec le CLI de mongo, afin de créer dans la base une donnée fictive. `db.comment.insert({"Author":"toto", "text": "Hello"})'.
+
+Une image de votre runtime actuel pourrait ressembler à cela. 
+![Dev](./ecranConfGeneral.png)
 
 
 
