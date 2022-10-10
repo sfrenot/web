@@ -593,7 +593,15 @@ Le premier se fait en corrigeant la ligne du ComponentBox réalisant l'appel de 
 "proxy": "http://localhost:3001"
 ```
 
-A partir de maintenant le texte affiché devrait récupérer les données de la base. Vous pouvez ajouter à la main des enregistrements en base et vérifie que le client se met bien à jour. 
+A partir de maintenant le texte affiché devrait récupérer les données de la base. Vous pouvez ajouter à la main des enregistrements en base et vérifier que le client se met bien à jour. 
+
+Le code de base peut s'arrêter là. Il met en place la chaine montante d'information des données vers le client en passant par un serveur de données. 
+
+Nous pouvons continuer cet outil pour y intégrer les formulaires de saisie et valider une voie décendante de l'information.
+
+
+# Extension de l'application pour la saisie
+L'application actuelle affiche 
 
 
 
