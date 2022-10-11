@@ -725,7 +725,12 @@ Nous ajoutons le traitement de ces deux fonctions dans `CommentBox.js`.
   }
 ```
 
-L'application peut maintenant ajouter des commentaires. 
+L'application peut maintenant ajouter des commentaires.
+
+# Dernière version 
+Enfin une dernière version (v3) est disponible pour tester des fonctionnalités liées à la modification et l'horodatage des commentaires.
+
+Vous pouvez tester l'évolution du code.
 
 
 
