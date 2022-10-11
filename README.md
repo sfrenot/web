@@ -634,6 +634,106 @@ Si vous avez lancé la base de données et le client react, vous pouvez tester v
 $ curl -X POST http://localhost:3001/api/comments -H 'Content-Type: application/json' -d '{"author":"George","text":"Merveilleux"}'
 ```
 
+## Ajout des composants et comportement client
+Nous allons décomposer cette phase en deux étapes. La première consiste à ajouter le formulaire de saisie des commentaires. La seconde à ajouter le traitement de ces données. 
+Ajoutez le fichier `CommentForm.js` suivant dans votre `client/src`.
+
+```javascript
+// CommentForm.js
+import React from 'react';
+
+const CommentForm = props => (
+  <form onSubmit={props.submitNewComment}>
+    <input
+      type="text"
+      name="author"
+      placeholder="Your name…"
+      value={props.author}
+      onChange={props.handleChangeText}
+    />
+    <input
+      type="text"
+      name="text"
+      placeholder="Say something..."
+      value={props.text}
+      onChange={props.handleTextChange}
+    />
+    <button type="submit">Submit</button>
+  </form>
+);
+
+CommentForm.defaultProps = {
+  text: '',
+  author: '',
+};
+
+export default CommentForm;
+```
+
+Puis injecter ce formulaire dans la page de gestion des commentaires `CommentBox.js`. 
+
+```javascript
+//CommentBox
+....import
+import CommentForm from './CommentForm';
+...
+...  render() {
+...    return (
+...   <div className="container">
+...     <div className="comments">
+...       <h2>Comments:</h2>
+...       <CommentList data={this.state.data} />
+...     </div>
+    <div className="form">
+      <CommentForm 
+            author={this.state.author}
+            text={this.state.text}
+            handleChangeText={this.onChangeText}
+            submitNewComment={this.submitNewComment}
+      />
+    </div>
+```
+
+La page s'affiche maintenant avec un formulaire de saisie. 
+
+Si vous ouvrez la console du navigateur, vous verez deux erreurs concernant les fonctions de traitement de la saisie `submitNewComment` et `handleChangeText`  et , qu'il faut ajouter dans le fichier `CommentBox.js` 
+
+Nous ajoutons le traitement de ces deux fonctions dans `CommentBox.js`.
+
+```javascript
+... componentWillUnmount
+
+  onChangeText = (e) => {
+    const newState = { ...this.state };
+    newState[e.target.name] = e.target.value;
+    this.setState(newState);
+  }
+
+  submitNewComment = (e) => {
+    e.preventDefault();
+    const { author, text } = this.state;
+    const data = [...this.state.data, { author, text, _id: Date.now().toString() }];
+    this.setState({ data });
+    fetch('/api/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ author, text }),
+    }).then(res => res.json()).then((res) => {
+      if (!res.success) this.setState({ error: res.error.message || res.error });
+      else this.setState({ author: '', text: '', error: null });
+    });
+  }
+```
+
+L'application peut maintenant ajouter des commentaires. 
+
+
+
+
+
+
+
+
 
 
 
