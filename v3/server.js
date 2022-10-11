@@ -1,20 +1,10 @@
 // server.js
 
 // first we import our dependencies…
-/*
 import express from 'express';
 import bodyParser from 'body-parser';
+import logger from 'morgan';
 import mongoose from 'mongoose';
-*/
-
-const express = require("express");
-const bodyParser = require("body-parser");
-const mongoose = require("mongoose");
-const Comment = require("./model/comment");
-
-mongoose.connect("mongodb://localhost:3010/");
-var db = mongoose.connection;
-db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 
 // and create our instances
 const app = express();
@@ -23,17 +13,23 @@ const router = express.Router();
 // set our port to either a predetermined port number if you have set it up, or 3001
 const API_PORT = process.env.API_PORT || 3001;
 
+import Comment from './models/comment';
+
+mongoose.connect("mongodb://localhost:3010/");
+var db = mongoose.connection;
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+console.log("db connectée");
 
 
 // now we should configure the API to use bodyParser and look for JSON data in the request body
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(logger('dev'));
 
 // now we can set the route path & initialize the API
 router.get('/', (req, res) => {
   res.json({ message: 'Hello, World!' });
 });
-
 router.get('/comments', (req, res) => {
   Comment.find((err, comments) => {
     if (err) return res.json({ success: false, error: err });
@@ -56,6 +52,35 @@ router.post('/comments', (req, res) => {
   comment.text = text;
   comment.save(err => {
     if (err) return res.json({ success: false, error: err });
+    return res.json({ success: true });
+  });
+});
+
+router.put('/comments/:commentId', (req, res) => {
+  console.log(req.params);
+  const { commentId } = req.params;
+  if (!commentId) {
+    return res.json({ success: false, error: 'No comment id provided' });
+  }
+  Comment.findById(commentId, (error, comment) => {
+    if (error) return res.json({ success: false, error });
+    const { author, text } = req.body;
+    if (author) comment.author = author;
+    if (text) comment.text = text;
+    comment.save(error => {
+      if (error) return res.json({ success: false, error });
+      return res.json({ success: true });
+    });
+  });
+});
+
+router.delete('/comments/:commentId', (req, res) => {
+  const { commentId } = req.params;
+  if (!commentId) {
+    return res.json({ success: false, error: 'No comment id provided' });
+  }
+  Comment.remove({ _id: commentId }, (error, comment) => {
+    if (error) return res.json({ success: false, error });
     return res.json({ success: true });
   });
 });
