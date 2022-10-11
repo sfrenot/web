@@ -601,7 +601,39 @@ Nous pouvons continuer cet outil pour y intégrer les formulaires de saisie et v
 
 
 # Extension de l'application pour la saisie
-L'application actuelle affiche 
+L'application actuelle affiche une liste de commentaires, stockés dans la base de données. Quand un commentaire est directement inséré, il est affiché quelques secondes plus tard. Nous pouvons étendre l'application pour gérer la saisie des données. Nous réalisons cet exercice de la même manière que précédemment : installer une route sur le backend, installer les composants côté client. 
+
+## Route backend
+Après la route de consultaion `get /comments`, ajoutez la route `post /comments`.
+
+```javascript
+//server.js
+.... get /comments
+router.post('/comments', (req, res) => {
+  const comment = new Comment();
+  // body parser lets us use the req.body
+  const { author, text } = req.body;
+  if (!author || !text) {
+    // we should throw an error. we can do this check on the front end
+    return res.json({
+      success: false,
+      error: 'You must provide an author and comment'
+    });
+  }
+  comment.author = author;
+  comment.text = text;
+  comment.save(err => {
+    if (err) return res.json({ success: false, error: err });
+    return res.json({ success: true });
+  });
+});
+```
+Si vous avez lancé la base de données et le client react, vous pouvez tester votre route avec curl en lançant la commande suivante :
+
+```bash
+$ curl -X POST http://localhost:3001/api/comments -H 'Content-Type: application/json' -d '{"author":"George","text":"Merveilleux"}'
+```
+
 
 
 
